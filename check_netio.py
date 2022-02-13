@@ -17,7 +17,6 @@ class IcingaOutput:
         self._result = self.OK
         self._perfdata = dict()
 
-
     def __lshift__(self, s):
         assert type(s) == str
         self._retv.append(s)
@@ -39,7 +38,7 @@ class IcingaOutput:
         if self._result != self.UNKNOWN:
             if self._perfdata:
                 print('|', end='')
-                for k,v in self._perfdata.items():
+                for k, v in self._perfdata.items():
                     print(f"{k}={v}", end=' ')
         #
         print('')
@@ -76,11 +75,11 @@ class NetioJson:
             http_params['auth'] = (args.auth_user, args.auth_password)
         result = requests.post(self._url, json=command, **http_params)
         if result.status_code == 401:
-            sys.stderr.write("ERROR 401  - Authorization failed during JSON POST\n")
+            sys.stderr.write(
+                "ERROR 401  - Authorization failed during JSON POST\n")
             raise SystemExit(3)
         assert result.status_code == 200, result.status_code
         return result.json()
-
 
     def info(self):
         "Get device info"
@@ -112,11 +111,11 @@ class NetioJson:
         output.set_perfdata('uptime', f'{uptime}s')
 
         if self.args.min is not None and uptime < self.args.min:
-                output << f"Uptime {uptime}s is lower than expected {self.args.min}s"
-                output.error()
+            output << f"Uptime {uptime}s is lower than expected {self.args.min}s"
+            output.error()
         elif self.args.max is not None and uptime > self.args.max:
-                output << f"Uptime {uptime}s is larger than expected {self.args.max}s"
-                output.error()
+            output << f"Uptime {uptime}s is larger than expected {self.args.max}s"
+            output.error()
         else:
             output << f"Device {name} - uptime is {uptime}s1"
         return output
@@ -131,7 +130,7 @@ class NetioJson:
         output.set_perfdata('uptime', f'{uptime}s')
 
         output_id = str(args.output_id)
-        output_state = [ k for k in data['Outputs'] if str(k["ID"]) == output_id ]
+        output_state = [k for k in data['Outputs'] if str(k["ID"]) == output_id]
         if len(output_state) != 1:
             output << f"ERROR - Unable to find output ID '{args.output_id}'"
             output.unknown()
@@ -169,7 +168,7 @@ class NetioJson:
         output.set_perfdata('uptime', f'{uptime}s')
 
         output_id = str(args.output_id)
-        output_state = [ k for k in data['Outputs'] if str(k["ID"]) == output_id ]
+        output_state = [k for k in data['Outputs'] if str(k["ID"]) == output_id]
         if len(output_state) != 1:
             output << f"ERROR - Unable to find output ID '{args.output_id}'"
             output.unknown()
@@ -187,17 +186,17 @@ class NetioJson:
         #
         output << f"Output {output_id}({output_name}) load {current}A, {load}W"
         if args.min_watts is not None and load < args.min_watts:
-                output << f', that is lower than {args.min_watts}W'
-                output.error()
+            output << f', that is lower than {args.min_watts}W'
+            output.error()
         elif args.max_watts is not None and load > args.max_watts:
-                output << f', that is greater than {args.max_watts}W'
-                output.error()
+            output << f', that is greater than {args.max_watts}W'
+            output.error()
         elif args.min_amps is not None and current > args.min_amps:
-                output << f', that is lower than {args.min_amps}A'
-                output.error()
+            output << f', that is lower than {args.min_amps}A'
+            output.error()
         elif args.max_amps is not None and current > args.max_amps:
-                output << f', that is greater than {args.max_amps}A'
-                output.error()
+            output << f', that is greater than {args.max_amps}A'
+            output.error()
         return output
 
     def set_output(self):
@@ -229,9 +228,9 @@ class NetioJson:
         else:
             action_id = 6
         command = dict(
-            Outputs = [
+            Outputs=[
                 dict(ID=int(output_id), Action=action_id)
-        ])
+            ])
         data = self._postCommand(command=command)
         #
         output_state = [k for k in data['Outputs'] if str(k["ID"]) == output_id]
@@ -267,69 +266,72 @@ def makeParser():
 
     info = subparsers.add_parser('info', help='Get PDU info')
     info.add_argument("--expect-mac", "--mac", default=None, nargs="?",
-                             help="Expect MAC address")
+                      help="Expect MAC address")
     info.set_defaults(action=NetioJson.info)
 
     uptime = subparsers.add_parser('uptime', help='Check PDU uptime')
     uptime.add_argument("--min", nargs="?", type=int,
-                               help="Minimum expected uptime in seconds")
+                        help="Minimum expected uptime in seconds")
     uptime.add_argument("--max", nargs="?", type=int,
-                               help="Maximum expected uptime in seconds")
+                        help="Maximum expected uptime in seconds")
     uptime.set_defaults(action=NetioJson.uptime)
 
     check_output = subparsers.add_parser('output', help='Check output state')
     check_output.add_argument("--output_id", '-n', dest='output_id',
                               default=1,
                               help="ID of output to check (default: 1)")
-    check_output.add_argument("--on", action='store_true', dest='expected_state',
+    check_output.add_argument("--on", action='store_true',
+                              dest='expected_state',
                               default=None,
                               help="Expect the output to be powered on")
-    check_output.add_argument("--off", action='store_false', dest='expected_state',
-                               default=None,
-                               help="Expect output to be powered off")
+    check_output.add_argument("--off", action='store_false',
+                              dest='expected_state',
+                              default=None,
+                              help="Expect output to be powered off")
     check_output.set_defaults(action=NetioJson.check_output_state)
 
     load = subparsers.add_parser('load', help='Check output load')
     load.add_argument("--output_id", '-n', dest='output_id',
-                              default=1,
-                              help="ID of output to check (default: 1)")
+                      default=1,
+                      help="ID of output to check (default: 1)")
     load.add_argument("--min-watts", action='store', dest='min_watts',
-                              default=None, type=float,
-                              help="Expect minimum load in W")
+                      default=None, type=float,
+                      help="Expect minimum load in W")
     load.add_argument("--max-watts", action='store', dest='max_watts',
-                              default=None, type=float,
-                              help="Expect maximum load in W")
+                      default=None, type=float,
+                      help="Expect maximum load in W")
     load.add_argument("--min-amps", action='store', dest='min_amps',
-                              default=None, type=float,
-                              help="Expect minimum load in A")
+                      default=None, type=float,
+                      help="Expect minimum load in A")
     load.add_argument("--max-amps", action='store', dest='max_amps',
-                              default=None, type=float,
-                              help="Expect maximum load in A")
+                      default=None, type=float,
+                      help="Expect maximum load in A")
     load.set_defaults(action=NetioJson.check_output_load)
 
     set_output = subparsers.add_parser('set_output', help='Set output state')
-    set_output.add_argument("--output_id", '-n', dest='output_id', required=True,
-                              help="ID of output to change state (default: 1)")
+    set_output.add_argument("--output_id", '-n', dest='output_id',
+                            required=True,
+                            help="ID of output to change state (default: 1)")
     set_output.add_argument("--on", dest='power_action',
-                              action='store_const', const='on',
-                              default=None,
-                              help="Turn the output on")
+                            action='store_const', const='on',
+                            default=None,
+                            help="Turn the output on")
     set_output.add_argument("--off", dest='power_action',
-                              action='store_const', const='off',
-                              default=None,
-                              help="Turn the output on")
+                            action='store_const', const='off',
+                            default=None,
+                            help="Turn the output on")
     set_output.add_argument('--restart', '--short-off', dest='power_action',
-                              action='store_const', const='restart',
-                              default=None,
-                              help="Turn it off and on again")
+                            action='store_const', const='restart',
+                            default=None,
+                            help="Turn it off and on again")
     set_output.add_argument("--ping", '--short-on', dest='power_action',
-                              action='store_const', const='ping',
-                              default=None,
-                              help="Turn it on and then off")
+                            action='store_const', const='ping',
+                            default=None,
+                            help="Turn it on and then off")
     set_output.add_argument("--toggle", dest='power_action',
-                              action='store_const', const='toggle',
-                              default=None,
-                              help="Toggle the power state")
+                            action='store_const', const='toggle',
+                            default=None,
+                            help="Toggle the power state")
     set_output.set_defaults(action=NetioJson.set_output)
 
     return parser
@@ -349,4 +351,3 @@ if __name__ == '__main__':
     parser = makeParser()
     args = parser.parse_args()
     main(args)
-
