@@ -203,50 +203,51 @@ def makeParser():
     parser.add_argument('--verbose', '-v', default=0,
                         action='store_const', const=1,
                         dest='verbose', help='Be verbose')
+    parser.set_defaults(action=NetioJson.info)
 
     subparsers = parser.add_subparsers(help="Select sub-command")
 
-    info_parser = subparsers.add_parser('info', help='Get PDU info')
-    info_parser.add_argument("--expect-mac", "--mac", default=None, nargs="?",
+    info = subparsers.add_parser('info', help='Get PDU info')
+    info.add_argument("--expect-mac", "--mac", default=None, nargs="?",
                              help="Expect MAC address")
-    info_parser.set_defaults(action=NetioJson.info)
+    info.set_defaults(action=NetioJson.info)
 
-    uptime_parser = subparsers.add_parser('uptime', help='Check PDU uptime')
-    uptime_parser.add_argument("--min", nargs="?", type=int,
+    uptime = subparsers.add_parser('uptime', help='Check PDU uptime')
+    uptime.add_argument("--min", nargs="?", type=int,
                                help="Minimum expected uptime in seconds")
-    uptime_parser.add_argument("--max", nargs="?", type=int,
+    uptime.add_argument("--max", nargs="?", type=int,
                                help="Maximum expected uptime in seconds")
-    uptime_parser.set_defaults(action=NetioJson.uptime)
+    uptime.set_defaults(action=NetioJson.uptime)
 
-    state_parser = subparsers.add_parser('output', help='Check output state')
-    state_parser.add_argument("--output_id", '-n', dest='output_id',
+    check_output = subparsers.add_parser('output', help='Check output state')
+    check_output.add_argument("--output_id", '-n', dest='output_id',
                               default=1,
                               help="ID of output to check (default: 1)")
-    state_parser.add_argument("--on", action='store_true', dest='expected_state',
+    check_output.add_argument("--on", action='store_true', dest='expected_state',
                               default=None,
                               help="Expect the output to be powered on")
-    state_parser.add_argument("--off", action='store_false', dest='expected_state',
+    check_output.add_argument("--off", action='store_false', dest='expected_state',
                                default=None,
                                help="Expect output to be powered off")
-    state_parser.set_defaults(action=NetioJson.check_output_state)
+    check_output.set_defaults(action=NetioJson.check_output_state)
 
-    load_parser = subparsers.add_parser('load', help='Check output load')
-    load_parser.add_argument("--output_id", '-n', dest='output_id',
+    load = subparsers.add_parser('load', help='Check output load')
+    load.add_argument("--output_id", '-n', dest='output_id',
                               default=1,
                               help="ID of output to check (default: 1)")
-    load_parser.add_argument("--min-watts", action='store', dest='min_watts',
+    load.add_argument("--min-watts", action='store', dest='min_watts',
                               default=None, type=float,
                               help="Expect minimum load in W")
-    load_parser.add_argument("--max-watts", action='store', dest='max_watts',
+    load.add_argument("--max-watts", action='store', dest='max_watts',
                               default=None, type=float,
                               help="Expect maximum load in W")
-    load_parser.add_argument("--min-amps", action='store', dest='min_amps',
+    load.add_argument("--min-amps", action='store', dest='min_amps',
                               default=None, type=float,
                               help="Expect minimum load in A")
-    load_parser.add_argument("--max-amps", action='store', dest='max_amps',
+    load.add_argument("--max-amps", action='store', dest='max_amps',
                               default=None, type=float,
                               help="Expect maximum load in A")
-    load_parser.set_defaults(action=NetioJson.check_output_load)
+    load.set_defaults(action=NetioJson.check_output_load)
 
 
     return parser
@@ -254,10 +255,7 @@ def makeParser():
 
 def main(args):
     device = NetioJson(args)
-    if 'action' not in args:
-        result = device.info()
-        result.flush(verbose=args.verbose)
-    elif args.action:
+    if args.action:
         result = args.action(self=device)
         result.flush(verbose=args.verbose)
     else:
