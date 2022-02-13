@@ -70,6 +70,18 @@ class NetioJson:
         assert result.status_code == 200
         return result.json()
 
+    def _postCommand(self, command):
+        http_params = dict()
+        if args.auth_user:
+            http_params['auth'] = (args.auth_user, args.auth_password)
+        result = requests.post(self._url, json=command, **http_params)
+        if result.status_code == 401:
+            sys.stderr.write("ERROR 401  - Authorization failed during JSON POST\n")
+            raise SystemExit(3)
+        assert result.status_code == 200, result.status_code
+        return result.json()
+
+
     def info(self):
         "Get device info"
         output = IcingaOutput()
@@ -188,6 +200,52 @@ class NetioJson:
                 output.error()
         return output
 
+    def set_output(self):
+        "Change output state"
+        output = IcingaOutput()
+        data = self._getStatus()
+        output.add_debug_data(str(data))
+
+        output_id = str(args.output_id)
+        output_state = [k for k in data['Outputs'] if str(k["ID"]) == output_id]
+        if len(output_state) != 1:
+            output << f"ERROR - Unable to find output ID '{args.output_id}'"
+            output.unknown()
+            return output
+        output_state = output_state[0]
+        output_power_state = output_state['State']
+        output.set_perfdata('old_state', int(output_power_state))
+        #
+        if args.power_action == "off":
+            action_id = 0  # Turn OFF
+        elif args.power_action == "on":
+            action_id = 1  # Turn ON
+        elif args.power_action == "restart":
+            action_id = 2  # Turn ON and OFF
+        elif args.power_action == "ping":
+            action_id = 3  # Turn ON and OFF
+        elif args.power_action == "toggle":
+            action_id = 4  # Turn OFF  and ON
+        else:
+            action_id = 6
+        command = dict(
+            Outputs = [
+                dict(ID=int(output_id), Action=action_id)
+        ])
+        data = self._postCommand(command=command)
+        #
+        output_state = [k for k in data['Outputs'] if str(k["ID"]) == output_id]
+        if len(output_state) != 1:
+            output << f"ERROR - Unable to find output ID '{args.output_id}'"
+            output.unknown()
+            return output
+        output_state = output_state[0]
+        output_power_state = output_state['State']
+        output.set_perfdata('new_state', int(output_power_state))
+
+        output << f"Sent command {args.power_action}({action_id})"
+        return output
+
 
 def makeParser():
     parser = argparse.ArgumentParser(description='Check Netio PDU status')
@@ -249,6 +307,30 @@ def makeParser():
                               help="Expect maximum load in A")
     load.set_defaults(action=NetioJson.check_output_load)
 
+    set_output = subparsers.add_parser('set_output', help='Set output state')
+    set_output.add_argument("--output_id", '-n', dest='output_id', required=True,
+                              help="ID of output to change state (default: 1)")
+    set_output.add_argument("--on", dest='power_action',
+                              action='store_const', const='on',
+                              default=None,
+                              help="Turn the output on")
+    set_output.add_argument("--off", dest='power_action',
+                              action='store_const', const='off',
+                              default=None,
+                              help="Turn the output on")
+    set_output.add_argument('--restart', '--short-off', dest='power_action',
+                              action='store_const', const='restart',
+                              default=None,
+                              help="Turn it off and on again")
+    set_output.add_argument("--ping", '--short-on', dest='power_action',
+                              action='store_const', const='ping',
+                              default=None,
+                              help="Turn it on and then off")
+    set_output.add_argument("--toggle", dest='power_action',
+                              action='store_const', const='toggle',
+                              default=None,
+                              help="Toggle the power state")
+    set_output.set_defaults(action=NetioJson.set_output)
 
     return parser
 

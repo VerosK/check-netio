@@ -38,6 +38,17 @@ Requirements:
 
        ./check_netio -H 192.168.50.220 load -n 1 --min-watts 10 --max-watts 300
 
+ * set output off and on again
+
+       ./check_netio -H 192.168.50.220 set_output -n 1 --on
+       ./check_netio -H 192.168.50.220 set_output -n 1 --off
+       ./check_netio -H 192.168.50.220 set_output -n 1 --toggle
+       ./check_netio -H 192.168.50.220 set_output -n 1 --restart
+
+ * set off with authentication
+  
+       ./check_netio -k user -K nbusr123 -H 192.168.50.220 set_output -n 1 --restart
+
 
 ## License:
 
@@ -46,4 +57,4 @@ BSD-2
 
 ## Thanks
 
- * Netio for providing me with test device
+ * Netio for providing me with a test device.
